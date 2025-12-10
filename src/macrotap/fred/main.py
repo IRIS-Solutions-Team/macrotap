@@ -7,11 +7,10 @@
 from __future__ import annotations
 
 # Typing imports
-from typing import Iterable
+from typing import Iterable, Any
 
 # Third-party imports
 import requests as _rq
-import documark as _dm
 import datapie as _ap
 
 #]
@@ -32,10 +31,9 @@ _PARAMETERS = r"?series_id={series_id}&api_key={api_key}&file_type=json"
 _MISSING_VALUE = r"."
 
 
-@_dm.reference(category="api", )
 def from_fred(
-    klass,
-    request: Iterable[str] | dict[str, str],
+    request_strings: str | Iterable[str],
+    return_info: bool = False,
 ) -> _ap.Databox:
     r"""
 ................................................................................
@@ -49,13 +47,13 @@ by the FRED website. The API key is stored in the `_API_KEY` variable in the
 and returns a `Databox` object with the downloaded series.
 
 db = Databox.from_fred(
-    request,
+    request_strings,
 )
 
 
 ### Input arguments ###
 
-???+ input "request"
+???+ input "request_strings"
     A list or dictionary of series IDs to download from FRED. If a dictionary is
     provided, the keys are used as the FRED codes and the values are used for
     the names of the time series in the Databox. If list of strings is provided,
@@ -70,12 +68,20 @@ db = Databox.from_fred(
 ................................................................................
     """
     #[
-    self = klass()
-    if not isinstance(request, dict):
-        request = _request_from_series_ids(request, )
-    for name, series_id in request.items():
-        self[name] = _get_series(series_id, )
-    return self
+    if isinstance(request_strings, str):
+        request_strings = (request_strings, )
+    #
+    output_db = _ap.Databox()
+    info = []
+    for i in request_strings:
+        output_db[i], current_info, = _get_series(i, )
+        if return_info:
+            info.append(current_info)
+    #
+    if return_info:
+        return output_db, info,
+    #
+    return output_db
     #}
 
 
@@ -90,7 +96,7 @@ def _request_from_series_ids(series_ids: Iterable[str], ):
     #]
 
 
-def _get_series(series_id: str, ):
+def _get_series(series_id: str, ) -> tuple[_ap.Series, dict[str, Any]]:
     """
     """
     #[
@@ -99,13 +105,19 @@ def _get_series(series_id: str, ):
     data_response = _rq.get(urls["data_url"], ).json()
     #
     if "seriess" not in meta_response or "observations" not in data_response:
-        raise IriePieCritical(f"Invalid response from FRED API for {series_id}", )
+        raise ValueError(f"Invalid response from FRED API for {series_id}", )
     #
     freq = _get_freq_from_meta_response(meta_response, )
     iso_dates, str_values = _get_dates_and_values_from_data_response(data_response, )
     values = tuple( (float(x) if x != _MISSING_VALUE else None) for x in str_values )
-    dates = _dates.periods_from_iso_strings(iso_dates, frequency=freq, )
-    return _ap.Series(periods=dates, values=values, )
+    dates = _ap.periods_from_iso_strings(iso_dates, frequency=freq, )
+    info = {
+        "meta_url": urls["meta_url"],
+        "data_url": urls["data_url"],
+        "meta_response": meta_response,
+        "data_response": data_response,
+    }
+    return _ap.Series(periods=dates, values=values, ), info,
     #]
 
 

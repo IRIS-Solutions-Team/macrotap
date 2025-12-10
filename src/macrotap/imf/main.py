@@ -37,8 +37,10 @@ def from_imf(
 
     build_request_urls = REQUEST_DISPATCH[group_requests]
     urls = build_request_urls(request_strings, group_by=group_by, )
+    responses = []
 
     output_db = _ap.Databox()
+    info = []
 
     for url in urls:
         response = _rq.get(url, headers=_HEADERS, )
@@ -48,12 +50,14 @@ def from_imf(
             response_db,
             strategy=merge_strategy,
         )
+        if return_info:
+            info.append({
+                "url": url,
+                "response": response.json(),
+            })
 
     if return_info:
-        info = {
-            "urls": urls,
-        }
-        return output_db, {"urls": urls, }
+        return output_db, info,
 
     return output_db
 

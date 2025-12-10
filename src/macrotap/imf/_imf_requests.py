@@ -17,6 +17,19 @@ from collections.abc import Iterable
 #]
 
 
+DATA_FLOW_SEPARATOR = "/"
+
+DIM_SEPARATOR = "."
+
+URL_TEMPLATE = (
+    r"https://api.imf.org/external/sdmx/2.1/data/"
+    r"{data_flow}"
+    r"{data_flow_separator}"
+    r"{series_key}"
+    r"?TIME_PERIOD&dataonly"
+)
+
+
 def build_request_urls(
     request_strings: Iterable[str],
     **kwargs,
@@ -25,8 +38,8 @@ def build_request_urls(
     """
     requests = _get_requests_from_strings(request_strings, )
     return tuple(
-        request.url
-        for request in requests
+        i.url
+        for i in requests
     )
 
 
@@ -66,7 +79,7 @@ def _get_requests_from_strings(
 def _group_requests(
     requests: tuple[_Request],
     group_by: Callable | None = None,
-) -> dict[str, tuple[_Request, ...]]:
+) -> tuple[tuple[_Request, ...], ...]:
 
     if group_by is None:
         group_by = _group_by
@@ -122,17 +135,11 @@ class _Request:
         "series_key_dims",
     )
 
-    _DATA_FLOW_SEPARATOR = "/"
+    _DATA_FLOW_SEPARATOR = DATA_FLOW_SEPARATOR
 
-    _DIM_SEPARATOR = "."
+    _DIM_SEPARATOR = DIM_SEPARATOR
 
-    _URL_TEMPLATE = (
-        r"https://api.imf.org/external/sdmx/2.1/data/"
-        r"{data_flow}"
-        r"{data_flow_separator}"
-        r"{series_key}"
-        r"?TIME_PERIOD&dataonly"
-    )
+    _URL_TEMPLATE = URL_TEMPLATE
 
     def __init__(
         self,

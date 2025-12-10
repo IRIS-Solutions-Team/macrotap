@@ -12,8 +12,8 @@ import datapie as ap
 #]
 
 
-_SERIES_KEY_DELIMITER = "."
-_DESCRIPTION_DELIMITER = " | "
+SERIES_KEY_DELIMITER = "."
+DESCRIPTION_DELIMITER = " | "
 
 
 def parse_response_json(response_json: dict, ) -> ap.Databox:
@@ -46,14 +46,14 @@ def parse_response_json(response_json: dict, ) -> ap.Databox:
             _extract_series_key_dim_value(i, p, )
             for i, p, in enumerate(pointers)
         )
-        return _SERIES_KEY_DELIMITER.join(series_key_parts, )
+        return SERIES_KEY_DELIMITER.join(series_key_parts, )
 
     def _description_from_pointer(pointers: tuple[int, ...], ) -> str:
         description_parts = tuple(
             _extract_series_key_dim_info(i, p, )
             for i, p, in enumerate(pointers)
         )
-        return _DESCRIPTION_DELIMITER.join(description_parts, )
+        return DESCRIPTION_DELIMITER.join(description_parts, )
 
     output_db = ap.Databox()
 
