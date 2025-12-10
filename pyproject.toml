@@ -4,14 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "macrotap"
-version = "0.0.0"
+version = "0.1.0"
 description = "Quick and easy access to macroeconomic data from public providers"
 readme = "README.md"
 requires-python = ">=3.11"
-classifiers = [ "Programming Language :: Python :: 3", "License :: OSI Approved :: MIT License", "Operating System :: OS Independent", ]
-keywords = [ "macroeconomics", "finance", "data", "API", "public", ]
-dependencies = [ "datapie >= 0.3.0", "requests >= 2.32.5", ]
-
+classifiers = [ "Programming Language :: Python :: 3", "License :: OSI Approved :: MIT License", "Operating System :: OS Independent",]
+keywords = [ "macroeconomics", "finance", "data", "API", "public",]
+dependencies = [ "datapie >= 0.3.0", "requests >= 2.32.5",]
 [[project.authors]]
 name = "Jaromir Benes"
 email = "jaromir.benes@gmail.com"
@@ -29,4 +28,3 @@ packages = [ "src/macrotap",]
 
 [tool.hatch.build.targets.sdist]
 include = [ "src/macrotap", "README.md", "LICENSE",]
-
