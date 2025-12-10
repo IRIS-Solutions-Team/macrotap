@@ -3,14 +3,11 @@ __pycache__
 
 .DS_Store
 .idea/
+dist/
 
-session
 .ipynb*
 *.zip
 .obsidian
-*.log
-
-dist/
-sandbox/
-issues/
+sandbox
+session
 

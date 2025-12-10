@@ -3,25 +3,25 @@
 
 
 #[
+
 from __future__ import annotations
 
+# Typing imports
 from typing import Iterable
+
+# Third-party imports
 import requests as _rq
 import documark as _dm
+import datapie as _ap
 
-from .. import dates as _dates
-from ..dates import Frequency
-from ..series.main import Series
-
-from . import main as _databoxes
 #]
 
 
 _FRED_FREQ_MAP = {
-    "A".casefold(): Frequency.YEARLY,
-    "Q".casefold(): Frequency.QUARTERLY,
-    "M".casefold(): Frequency.MONTHLY,
-    "D".casefold(): Frequency.DAILY,
+    "A".casefold(): _ap.Frequency.YEARLY,
+    "Q".casefold(): _ap.Frequency.QUARTERLY,
+    "M".casefold(): _ap.Frequency.MONTHLY,
+    "D".casefold(): _ap.Frequency.DAILY,
 }
 
 
@@ -36,7 +36,7 @@ _MISSING_VALUE = r"."
 def from_fred(
     klass,
     request: Iterable[str] | dict[str, str],
-) -> _databoxes.Databox:
+) -> _ap.Databox:
     r"""
 ................................................................................
 
@@ -105,7 +105,7 @@ def _get_series(series_id: str, ):
     iso_dates, str_values = _get_dates_and_values_from_data_response(data_response, )
     values = tuple( (float(x) if x != _MISSING_VALUE else None) for x in str_values )
     dates = _dates.periods_from_iso_strings(iso_dates, frequency=freq, )
-    return Series(periods=dates, values=values, )
+    return _ap.Series(periods=dates, values=values, )
     #]
 
 

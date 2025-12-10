@@ -2,12 +2,14 @@ r"""
 """
 
 
-from ._fred import from_fred
+from .fred import *
+from .fred import __all__ as all_fred
 
-from ._imf import from_imf
+from .imf import *
+from .imf import __all__ as all_imf
 
 __all__ = (
-    "from_fred",
-    "from_imf",
+    *all_fred,
+    *all_imf,
 )
 
