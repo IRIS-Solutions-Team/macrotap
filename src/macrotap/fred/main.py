@@ -33,6 +33,7 @@ _MISSING_VALUE = r"."
 
 def from_fred(
     request_strings: str | Iterable[str],
+    target_db: _ap.Databox | None = None,
     return_info: bool = False,
 ) -> _ap.Databox:
     r"""
@@ -71,18 +72,19 @@ db = Databox.from_fred(
     if isinstance(request_strings, str):
         request_strings = (request_strings, )
     #
-    output_db = _ap.Databox()
+    if target_db is None:
+        target_db = _ap.Databox()
     info = []
     for i in request_strings:
-        output_db[i], current_info, = _get_series(i, )
+        target_db[i], current_info, = _get_series(i, )
         if return_info:
             info.append(current_info)
     #
     if return_info:
-        return output_db, info,
+        return target_db, info,
     #
-    return output_db
-    #}
+    return target_db
+    #]
 
 
 def _request_from_series_ids(series_ids: Iterable[str], ):

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 # Typing imports
-from typing import Any, Callable
+from typing import Any, Callable, Self
 
 # Standard library imports
 import itertools as _it
@@ -17,26 +17,33 @@ from collections.abc import Iterable
 #]
 
 
-DATA_FLOW_SEPARATOR = "/"
-
 DIM_SEPARATOR = "."
 
+
+CONTEXT = "dataflow"
+AGENCY = "IMF.STA"
+VERSION = "+"
+
+
 URL_TEMPLATE = (
-    r"https://api.imf.org/external/sdmx/2.1/data/"
-    r"{data_flow}"
-    r"{data_flow_separator}"
-    r"{series_key}"
-    r"?TIME_PERIOD&dataonly"
+    r"https://api.imf.org/external/sdmx/3.0/data/"
+    r"{context}/"
+    r"{agency}/"
+    r"{resource}/"
+    r"{version}/"
+    r"{series_key}?"
+    r"detail=dataonly"
 )
 
 
 def build_request_urls(
+    resource: str,
     request_strings: Iterable[str],
     **kwargs,
 ) -> tuple[str, ...]:
     r"""
     """
-    requests = _get_requests_from_strings(request_strings, )
+    requests = _get_requests_from_strings(resource, request_strings, )
     return tuple(
         i.url
         for i in requests
@@ -44,12 +51,13 @@ def build_request_urls(
 
 
 def build_grouped_request_urls(
+    resource: str,
     request_strings: Iterable[str],
     group_by: Callable | None = None,
 ) -> tuple[str, ...]:
     r"""
     """
-    requests = _get_requests_from_strings(request_strings, )
+    requests = _get_requests_from_strings(resource, request_strings, )
     grouped_requests = _group_requests(
         requests,
         group_by=group_by,
@@ -61,6 +69,7 @@ def build_grouped_request_urls(
 
 
 def _get_requests_from_strings(
+    resource: str,
     request_strings: str | Iterable[str], 
 ) -> tuple[_Request, ...]:
     r"""
@@ -69,7 +78,7 @@ def _get_requests_from_strings(
     if isinstance(request_strings, str):
         request_strings = (request_strings, )
     requests = tuple(
-        _Request.from_request_string(n, )
+        _Request.from_request_string(resource, n, )
         for n in request_strings
     )
     return requests
@@ -78,28 +87,25 @@ def _get_requests_from_strings(
 
 def _group_requests(
     requests: tuple[_Request],
-    group_by: Callable | None = None,
+    group_by: Callable[tuple[str, ...], Any],
 ) -> tuple[tuple[_Request, ...], ...]:
-
-    if group_by is None:
-        group_by = _group_by
-
+    r"""
+    """
+    def _group_by(request: _Request, ) -> Any:
+        return group_by(request.series_key_dims, )
+    #
     invalid = next((i for i in requests if "+" in i.series_key), None)
     if invalid:
         raise ValueError(
             f"Invalid series key '{invalid}' found in individual requests. "
             "Use 'build_request_urls' with 'group_requests=False'."
         )
-    requests = sorted(requests, key=group_by, )
+    requests = sorted(requests, key=_group_by, )
     grouped_requests = tuple(
         tuple(group)
-        for _, group in _it.groupby(requests, key=group_by, )
+        for _, group in _it.groupby(requests, key=_group_by, )
     )
     return grouped_requests
-
-
-def _group_by(request: _Request, ) -> Any:
-    return request.data_flow
 
 
 def _build_url_for_grouped_requests(
@@ -108,7 +114,7 @@ def _build_url_for_grouped_requests(
     r"""
     """
     #[
-    data_flow = grouped_requests[0].data_flow
+    resource = grouped_requests[0].resource
     dim_lists = tuple(
         request.series_key_dims
         for request in grouped_requests
@@ -119,9 +125,11 @@ def _build_url_for_grouped_requests(
     )
     series_key = _Request._DIM_SEPARATOR.join(combined_dims, )
     url = _Request._URL_TEMPLATE.format(
-        data_flow=data_flow,
-        data_flow_separator=_Request._DATA_FLOW_SEPARATOR,
+        resource=resource,
         series_key=series_key,
+        context=CONTEXT,
+        agency=AGENCY,
+        version=VERSION,
     )
     return url
     #]
@@ -131,30 +139,37 @@ class _Request:
     #[
 
     __slots__ = (
-        "data_flow",
+        "resource",
         "series_key_dims",
     )
 
-    _DATA_FLOW_SEPARATOR = DATA_FLOW_SEPARATOR
-
     _DIM_SEPARATOR = DIM_SEPARATOR
-
     _URL_TEMPLATE = URL_TEMPLATE
+    series_key_dims_constructor = tuple
 
     def __init__(
         self,
-        data_flow: str = "",
-        series_key_dims: Iterable[str] = (),
+        resource: str,
+        series_key_dims: tuple[str, ...],
     ) -> None:
-        self.data_flow = data_flow
-        self.series_key_dims = tuple(series_key_dims)
+        self.resource = resource
+        self.series_key_dims = series_key_dims
 
     @classmethod
-    def from_request_string(klass, request_string: str) -> _Request:
-        data_flow, series_key, = request_string.split(klass._DATA_FLOW_SEPARATOR, )
-        series_key_dims = tuple(series_key.split(klass._DIM_SEPARATOR, ))
+    def from_request_string(
+        klass,
+        resource: str,
+        request_string: str,
+        series_key_dims_constructor: Callable | None = None,
+    ) -> Self:
+        r"""
+        """
+        if series_key_dims_constructor is None:
+            series_key_dims_constructor = klass.series_key_dims_constructor
+        request_string_split = request_string.split(klass._DIM_SEPARATOR, )
+        series_key_dims = series_key_dims_constructor(request_string_split, )
         return klass(
-            data_flow=data_flow,
+            resource=resource,
             series_key_dims=series_key_dims,
         )
 
@@ -165,9 +180,11 @@ class _Request:
     @property
     def url(self, ) -> str:
         return self._URL_TEMPLATE.format(
-            data_flow=self.data_flow,
-            data_flow_separator=self._DATA_FLOW_SEPARATOR,
+            resource=self.resource,
             series_key=self.series_key,
+            context=CONTEXT,
+            agency=AGENCY,
+            version=VERSION,
         )
 
     @property

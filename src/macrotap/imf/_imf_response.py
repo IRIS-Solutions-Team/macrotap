@@ -4,85 +4,121 @@
 from __future__ import annotations
 
 # Standard library imports
-import json
+import io
+import csv
+
+# Typing imports
+from typing import Iterable, Callable
 
 # Third-party imports
 import datapie as ap
 
+# Local imports
+from ._imf_requests import DIM_SEPARATOR
+
 #]
 
 
-SERIES_KEY_DELIMITER = "."
-DESCRIPTION_DELIMITER = " | "
+def parse_response_csv(response_csv: str, ) -> ap.Databox:
 
+    stream = io.StringIO(response_csv, )
+    reader = csv.reader(stream, )
 
-def parse_response_json(response_json: dict, ) -> ap.Databox:
+    header = next(reader, )
+    db_key_extractor = _build_db_key_extractor(header, )
+    time_period_extractor = _build_time_period_extractor(header, )
+    value_extractor = _build_value_extractor(header, )
 
-    observation_dims = response_json["structure"]["dimensions"]["observation"]
-    series_key_dims = response_json["structure"]["dimensions"]["series"]
-    series_data = response_json["dataSets"][0]["series"]
-
-    if len(observation_dims) != 1 or observation_dims[0]["id"] != "TIME_PERIOD":
-        raise ValueError("Unexpected observation dimensions structure")
-
-    time_periods_info = observation_dims[0]["values"]
-    time_periods_sdmx = tuple(i["id"] for i in time_periods_info)
-    time_periods_sdmx = tuple(_clean_sdmx_string(i) for i in time_periods_sdmx)
-    time_periods = {
-        str(i): ap.Period.from_sdmx_string(j)
-        for i, j in enumerate(time_periods_sdmx, )
-    }
-
-    def _extract_series_key_dim_value(dim:int, pointer:int) -> str:
-        return series_key_dims[dim]["values"][pointer]["id"]
-
-    def _extract_series_key_dim_info(dim:int, pointer:int) -> str:
-        return series_key_dims[dim]["values"][pointer]["name"]
-
-    def _series_key_from_pointer(pointers: tuple[int, ...], ) -> tuple[str, str]:
-        r"""
-        """
-        series_key_parts = tuple(
-            _extract_series_key_dim_value(i, p, )
-            for i, p, in enumerate(pointers)
-        )
-        return SERIES_KEY_DELIMITER.join(series_key_parts, )
-
-    def _description_from_pointer(pointers: tuple[int, ...], ) -> str:
-        description_parts = tuple(
-            _extract_series_key_dim_info(i, p, )
-            for i, p, in enumerate(pointers)
-        )
-        return DESCRIPTION_DELIMITER.join(description_parts, )
+    intermediate_db = {}
+    for row in reader:
+        db_key = db_key_extractor(row, )
+        if db_key not in intermediate_db:
+            intermediate_db[db_key] = []
+        time_period = time_period_extractor(row, )
+        value = value_extractor(row, )
+        if time_period is not None and value is not None:
+            intermediate_db[db_key].append((time_period, value, ), )
 
     output_db = ap.Databox()
 
-    for series_key, series_record, in series_data.items():
-        pointers = _pointers_from_numeric_series_key(series_key, )
-        series_key = _series_key_from_pointer(pointers, )
-        description = _description_from_pointer(pointers, )
-        #
-        series_periods = tuple(
-            time_periods[i]
-            for i in series_record["observations"].keys()
-        )
-        #
-        series_values = tuple(
-            float(i[0]) if i[0] is not None else None
-            for i in series_record["observations"].values()
-        )
-        #
-        time_series = ap.Series(
-            periods=series_periods,
-            values=series_values,
-            description=description,
-        )
-        output_db[series_key] = time_series
+    for db_key, observations, in intermediate_db.items():
+        output_db[db_key] = _create_series_from_observations(observations, )
 
     return output_db
 
 
-def _clean_sdmx_string(s: str, ) -> str:
+def _build_db_key_extractor(
+    header: Iterable[str],
+) -> Callable:
+    r"""
+    """
+    #[
+    action_index = header.index("ACTION", )
+    time_period_index = header.index("TIME_PERIOD", )
+    #
+    def db_key_extractor(row: Iterable[str], ) -> str:
+        return DIM_SEPARATOR.join(row[action_index+1:time_period_index], )
+    #
+    return db_key_extractor
+    #]
+
+
+_FREQUENCY_MAP = {
+    "A": ap.Frequency.YEARLY,
+    "Q": ap.Frequency.QUARTERLY,
+    "M": ap.Frequency.MONTHLY,
+    "D": ap.Frequency.DAILY,
+}
+
+
+def _build_time_period_extractor(
+    header: Iterable[str],
+) -> Callable:
+    r"""
+    """
+    #[
+    time_period_index = header.index("TIME_PERIOD", )
+    frequency_index = header.index("FREQUENCY", )
+    #
+    def time_period_extractor(row: Iterable[str], ) -> str:
+        time_period_string = _clean_sdmx_date_string(row[time_period_index].strip(), )
+        if not time_period_string:
+            return None
+        frequency_letter = row[frequency_index].strip()
+        frequency = _FREQUENCY_MAP[frequency_letter]
+        return ap.Period.from_sdmx_string(
+            time_period_string,
+            frequency=frequency,
+        )
+    #
+    return time_period_extractor
+    #]
+
+
+_MISSING_VALUE = ("", "NA", )
+
+
+def _build_value_extractor(
+    header: Iterable[str],
+) -> Callable:
+    r"""
+    """
+    #[
+    value_index = header.index("OBS_VALUE", )
+    #
+    def value_extractor(row: Iterable[str], ) -> float | None:
+        value_string = row[value_index].strip()
+        return (
+            float(value_string, )
+            if value_string not in ("", "NA", )
+            else None
+        )
+    #
+    return value_extractor
+    #]
+
+
+def _clean_sdmx_date_string(s: str, ) -> str:
     r"""
     Dates in response do not conform to ISO 8601 due to use of "-M" for months
     """
@@ -90,13 +126,18 @@ def _clean_sdmx_string(s: str, ) -> str:
     return s
 
 
-def _pointers_from_numeric_series_key(numeric_series_key: str) -> tuple[str, str]:
+def _get_frequency_from_letter(frequency_letter: str, ) -> str:
     r"""
-    Convert '0:1:2' to (0, 1, 2, ) where each number is an int pointer to
-    the dimension value in the series key dimension structure
     """
-    return tuple(
-        int(i)
-        for i in numeric_series_key.split(":")
+    return _FREQUENCY_MAP[frequency_letter, ]
+
+
+def _create_series_from_observations(observations: Iterable[tuple], ) -> ap.Series:
+    if not observations:
+        return ap.Series()
+    time_periods, obs_values = zip(*observations, )
+    return ap.Series(
+        periods=time_periods,
+        values=obs_values,
     )
 
