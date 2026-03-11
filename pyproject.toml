@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "macrotap"
-version = "0.2.0"
+version = "0.3.0"
 description = "Quick and easy access to macroeconomic data from public providers"
 readme = "README.md"
 requires-python = ">=3.11"
