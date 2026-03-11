@@ -13,22 +13,19 @@ from typing import Iterable, Any
 import requests as _rq
 import datapie as _ap
 
+# Application imports
+from .. import _adaptations as _ad
+
 #]
 
 
-_FRED_FREQ_MAP = {
-    "A".casefold(): _ap.Frequency.YEARLY,
-    "Q".casefold(): _ap.Frequency.QUARTERLY,
-    "M".casefold(): _ap.Frequency.MONTHLY,
-    "D".casefold(): _ap.Frequency.DAILY,
-}
+_API_KEY = r"951f01181da86ccb9045ce8716f82f43"
 
 
 _BASE_URL = r"https://api.stlouisfed.org/fred/series"
 _OBSERVATIONS_URL = _BASE_URL + r"/observations"
-_API_KEY = r"951f01181da86ccb9045ce8716f82f43"
 _PARAMETERS = r"?series_id={series_id}&api_key={api_key}&file_type=json"
-_MISSING_VALUE = r"."
+_MISSING_VALUE_STRINGS = (r".", )
 
 
 def from_fred(
@@ -110,16 +107,20 @@ def _get_series(series_id: str, ) -> tuple[_ap.Series, dict[str, Any]]:
         raise ValueError(f"Invalid response from FRED API for {series_id}", )
     #
     freq = _get_freq_from_meta_response(meta_response, )
-    iso_dates, str_values = _get_dates_and_values_from_data_response(data_response, )
-    values = tuple( (float(x) if x != _MISSING_VALUE else None) for x in str_values )
-    dates = _ap.periods_from_iso_strings(iso_dates, frequency=freq, )
+    iso_period_strings, value_strings, = _get_periods_and_values_from_data_response(data_response, )
+    values = tuple(
+        (float(x) if x not in _MISSING_VALUE_STRINGS else None)
+        for x in value_strings
+    )
+    dates = _ap.periods_from_iso_strings(iso_period_strings, frequency=freq, )
+    series = _ap.Series(periods=dates, values=values, )
     info = {
         "meta_url": urls["meta_url"],
         "data_url": urls["data_url"],
         "meta_response": meta_response,
         "data_response": data_response,
     }
-    return _ap.Series(periods=dates, values=values, ), info,
+    return series, info,
     #]
 
 
@@ -127,20 +128,20 @@ def _get_freq_from_meta_response(meta_response: dict, ):
     """
     """
     #[
-    freq_letter = meta_response["seriess"][0]["frequency_short"].casefold()
-    return _FRED_FREQ_MAP[freq_letter]
+    freq_letter = meta_response["seriess"][0]["frequency_short"]
+    return _ad.FREQUENCY_MAP[freq_letter.casefold()]
     #]
 
 
-def _get_dates_and_values_from_data_response(data_response: dict, ):
+def _get_periods_and_values_from_data_response(data_response: dict, ):
     """
     """
     #[
-    date_value_pairs = (
+    period_value_pairs = (
         (obs["date"], obs["value"], )
         for obs in data_response["observations"]
     )
-    return zip(*date_value_pairs, )
+    return zip(*period_value_pairs, )
     #]
 
 

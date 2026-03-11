@@ -1,3 +1,6 @@
+r"""
+"""
+
 
 #[
 
@@ -5,72 +8,76 @@ from __future__ import annotations
 
 # Third-party imports
 import datapie as _ap
-import requests as _rq
 
-# Local imports
-from ._imf_requests import build_request_urls, build_grouped_request_urls
-from ._imf_response import parse_response_csv
+# Application imports
+from .. import _dim_requests as _dr
+from .. import _workflows as _wf
 
 #]
 
 
-REQUEST_DISPATCH = {
-    True: build_grouped_request_urls,
-    False: build_request_urls,
-}
+_CONTEXT = "dataflow"
+_AGENCY = "IMF.STA"
+_VERSION = "+"
+
+
+_URL_TEMPLATE = (
+    r"https://api.imf.org/external/sdmx/3.0/data/"
+    r"{context}/"
+    r"{agency}/"
+    r"{resource}/"
+    r"{version}/"
+    r"{{series_key}}?"
+    r"detail=dataonly"
+)
+
 
 _HEADERS = {"accept": "application/csv", }
 
 
 def from_imf(
     resource: str,
-    request_strings: str | Iterable[str],
-    group_requests: bool = True,
-    group_by: Callable | None = None,
-    merge_strategy: str = "error",
-    target_db: _ap.Databox | None = None,
-    return_info: bool = False,
+    request_strings: Iterable[str],
+    **kwargs,
 ) -> _ap.Databox:
     r"""
     """
-    if isinstance(request_strings, str):
-        request_strings = (request_strings, )
-    request_strings = tuple(set(request_strings, ))
+    #[
 
-    build_request_urls = REQUEST_DISPATCH[group_requests]
-    urls = build_request_urls(resource, request_strings, group_by=group_by, )
-    responses = []
-
-    if target_db is None:
-        target_db = _ap.Databox()
-
-    output_db = _ap.Databox()
-    info = []
-
-    for url in urls:
-        response = _rq.get(url, headers=_HEADERS, )
-        response_csv = response.content.decode()
-        response_db = parse_response_csv(response_csv, )
-        output_db.merge(
-            response_db,
-            strategy=merge_strategy,
-        )
-        if return_info:
-            info.append({
-                "url": url,
-                "response": response_csv,
-            })
-
-    if group_requests:
-        output_db.keep(request_strings, )
-
-    target_db.merge(
-        output_db,
-        strategy=merge_strategy,
+    url_template = _URL_TEMPLATE.format(
+        resource=resource,
+        #
+        context=_CONTEXT,
+        agency=_AGENCY,
+        version=_VERSION,
     )
 
-    if return_info:
-        return target_db, info,
+    return _wf.run_sdmx_csv_workflow(
+        request_strings=request_strings,
+        url_template=url_template,
+        headers=_HEADERS,
+        build_extractors={
+            "build_key_extractor": _build_key_extractor,
+        },
+        **kwargs,
+    )
 
-    return target_db
+    #]
+
+
+def _build_key_extractor(
+    header: Iterable[str],
+) -> Callable:
+    r"""
+    """
+    #[
+    action_index = header.index("ACTION", )
+    time_period_index = header.index("TIME_PERIOD", )
+    dim_separator = _dr.DIM_SEPARATOR
+    #
+    def db_key_extractor(row: Iterable[str], ) -> str:
+        return dim_separator.join(row[action_index+1:time_period_index], )
+    #
+    return db_key_extractor
+    #]
 

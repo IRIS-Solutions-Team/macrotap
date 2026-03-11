@@ -1,15 +1,25 @@
-r"""
-"""
 
+from importlib import import_module
 
-from .fred import *
-from .fred import __all__ as all_fred
-
-from .imf import *
-from .imf import __all__ as all_imf
-
-__all__ = (
-    *all_fred,
-    *all_imf,
+modules = (
+    "fred",
+    "imf",
+    "ecb",
 )
+
+__all__ = []
+
+for n in modules:
+
+    # Import module
+    module = import_module(f".{n}", package=__package__, )
+
+    # Extract the list of all public names
+    all_names = getattr(module, "__all__", [])
+
+    # Add the public names to the package's global namespace 
+    globals().update({name: getattr(module, name) for name in all_names})
+
+    # Add the public names to the package's __all__ list
+    __all__.extend(all_names)
 

@@ -25,7 +25,7 @@ def parse_response_csv(response_csv: str, ) -> ap.Databox:
     reader = csv.reader(stream, )
 
     header = next(reader, )
-    db_key_extractor = _build_db_key_extractor(header, )
+    db_key_extractor = _build_key_extractor(header, )
     time_period_extractor = _build_time_period_extractor(header, )
     value_extractor = _build_value_extractor(header, )
 
@@ -47,7 +47,7 @@ def parse_response_csv(response_csv: str, ) -> ap.Databox:
     return output_db
 
 
-def _build_db_key_extractor(
+def _build_key_extractor(
     header: Iterable[str],
 ) -> Callable:
     r"""
@@ -126,16 +126,16 @@ def _clean_sdmx_date_string(s: str, ) -> str:
     return s
 
 
-def _get_frequency_from_letter(frequency_letter: str, ) -> str:
-    r"""
-    """
-    return _FREQUENCY_MAP[frequency_letter, ]
+#def _get_frequency_from_letter(frequency_letter: str, ) -> str:
+#    r"""
+#    """
+#    return _FREQUENCY_MAP[frequency_letter, ]
 
 
 def _create_series_from_observations(observations: Iterable[tuple], ) -> ap.Series:
     if not observations:
         return ap.Series()
-    time_periods, obs_values = zip(*observations, )
+    time_periods, obs_values, = zip(*observations, )
     return ap.Series(
         periods=time_periods,
         values=obs_values,
