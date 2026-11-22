@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 0
           ref: develop
           path: macrotap
-          token: ${{ secrets.IRISPIE_ACTIONS_TOKEN_2025 }}
+          token: ${{ secrets.IRIS_SOLUTIONS_TEAM_TOKEN_2026 }}
 
       - name: Checkout macrotap-tests/master
         uses: actions/checkout@v7
@@ -42,7 +42,7 @@ jobs:
           fetch-depth: 1
           ref: master
           path: macrotap-tests
-          token: ${{ secrets.IRISPIE_ACTIONS_TOKEN_2025 }}
+          token: ${{ secrets.IRIS_SOLUTIONS_TEAM_TOKEN_2026 }}
 
       - uses: actions/setup-python@v7
         with:
@@ -76,7 +76,7 @@ jobs:
           fetch-depth: 0
           ref: develop
           path: macrotap
-          token: ${{ secrets.IRISPIE_ACTIONS_TOKEN_2025 }}
+          token: ${{ secrets.IRIS_SOLUTIONS_TEAM_TOKEN_2026 }}
           repository: IRIS-Solutions-Team/macrotap
 
       - name: Set up identity
@@ -129,7 +129,7 @@ jobs:
         env:
           version: ${{ steps.bump-version.outputs.new-version }}
           # gh picks the token from GITHUB_TOKEN env variable automatically
-          GITHUB_TOKEN: ${{ secrets.IRISPIE_ACTIONS_TOKEN_2025 }}
+          GITHUB_TOKEN: ${{ secrets.IRIS_SOLUTIONS_TEAM_TOKEN_2026 }}
         working-directory: macrotap
         run: |
           git switch master
@@ -152,7 +152,7 @@ jobs:
           fetch-depth: 0
           ref: master
           path: macrotap
-          token: ${{ secrets.IRISPIE_ACTIONS_TOKEN_2025 }}
+          token: ${{ secrets.IRIS_SOLUTIONS_TEAM_TOKEN_2026 }}
 
       - name: Set up identity
         working-directory: macrotap
