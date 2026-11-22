@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout macrotap/develop
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: develop
@@ -36,7 +36,7 @@ jobs:
           token: ${{ secrets.IRISPIE_ACTIONS_TOKEN_2025 }}
 
       - name: Checkout macrotap-tests/master
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: IRIS-Solutions-Team/macrotap-tests
           fetch-depth: 1
@@ -44,7 +44,7 @@ jobs:
           path: macrotap-tests
           token: ${{ secrets.IRISPIE_ACTIONS_TOKEN_2025 }}
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
 
@@ -71,7 +71,7 @@ jobs:
 
     steps:
       - name: Checkout macrotap/develop
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: develop
@@ -86,7 +86,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
 
@@ -147,7 +147,7 @@ jobs:
 
     steps:
       - name: Checkout master
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           ref: master
@@ -161,7 +161,7 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.14"
 
@@ -188,7 +188,7 @@ jobs:
             python -m twine upload dist/* -r pypi -u __token__ -p $PYPI_TOKEN --verbose
 
       - name: Upload new dist as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist-${{ env.VERSION }}
           path: macrotap/dist/*
