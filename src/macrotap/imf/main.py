@@ -16,9 +16,9 @@ from .. import _workflows as _wf
 #]
 
 
-_CONTEXT = "dataflow"
-_AGENCY = "IMF.STA"
-_VERSION = "+"
+_DEFAULT_CONTEXT = "dataflow"
+_DEFAULT_AGENCY = "IMF.STA"
+_DEFAULT_VERSION = "+"
 
 
 _URL_TEMPLATE = (
@@ -38,20 +38,22 @@ _HEADERS = {"accept": "application/csv", }
 def from_imf(
     resource: str,
     request_strings: Iterable[str],
+    *,
+    context: str = _DEFAULT_CONTEXT,
+    agency: str = _DEFAULT_AGENCY,
+    version: str = _DEFAULT_VERSION,
+    #
     **kwargs,
 ) -> _ap.Databox:
     r"""
     """
     #[
-
     url_template = _URL_TEMPLATE.format(
         resource=resource,
-        #
-        context=_CONTEXT,
-        agency=_AGENCY,
-        version=_VERSION,
+        context=context,
+        agency=agency,
+        version=version,
     )
-
     return _wf.run_sdmx_csv_workflow(
         request_strings=request_strings,
         url_template=url_template,
@@ -61,7 +63,6 @@ def from_imf(
         },
         **kwargs,
     )
-
     #]
 
 
