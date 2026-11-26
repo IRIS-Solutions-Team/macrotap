@@ -7,18 +7,19 @@ r"""
 from __future__ import annotations
 
 # Third-party imports
-import datapie as _ap
+import datapie as _da
 
 # Application imports
 from .. import _dim_requests as _dr
 from .. import _workflows as _wf
+from .. import _sdmx_csv_responses as _sr
 
 #]
 
 
-_RESOURCE = "data"
-_AGENCY = "all"
-_VERSION = "latest"
+_DEFAULT_RESOURCE = "data"
+_DEFAULT_AGENCY = "all"
+_DEFAULT_VERSION = "latest"
 
 
 _URL_TEMPLATE = (
@@ -27,6 +28,7 @@ _URL_TEMPLATE = (
     r"{agency},{dataflow},{version}/"
     r"{{series_key}}?"
     r"format=csvdata&detail=dataonly"
+    r"{extra_params}"
 )
 
 
@@ -38,15 +40,17 @@ def build_request_urls_for_ecb(
     dataflow: str,
     request_strings: Iterable[str],
     group_requests_by: Callable | None = None,
+    extra_params: str = "",
 ) -> tuple[str, ...]:
     r"""
     """
     #[
     url_template = _URL_TEMPLATE.format(
         dataflow=dataflow,
-        resource=_RESOURCE,
-        agency=_AGENCY,
-        version=_VERSION,
+        resource=_DEFAULT_RESOURCE,
+        agency=_DEFAULT_AGENCY,
+        version=_DEFAULT_VERSION,
+        extra_params=extra_params,
     )
     return _dr.build_request_urls(
         request_strings,
@@ -59,29 +63,38 @@ def build_request_urls_for_ecb(
 def from_ecb(
     dataflow: str,
     request_strings: Iterable[str],
+    extra_params: str = "",
+    output_format: _sr.OutputFormat = "series",
+    return_info: bool = False,
     **kwargs,
-) -> _ap.Databox:
+) -> _da.Databox:
     r"""
     """
     #[
-
+    #
     url_template = _URL_TEMPLATE.format(
         dataflow=dataflow,
-        resource=_RESOURCE,
-        agency=_AGENCY,
-        version=_VERSION,
+        resource=_DEFAULT_RESOURCE,
+        agency=_DEFAULT_AGENCY,
+        version=_DEFAULT_VERSION,
+        extra_params=extra_params,
     )
-
-    return _wf.run_sdmx_csv_workflow(
+    #
+    output_db, info, = _wf.run_sdmx_csv_workflow(
         request_strings=request_strings,
         url_template=url_template,
         build_extractors={
             "build_frequency_extractor": _build_frequency_extractor,
             "build_key_extractor": _build_key_extractor,
         },
+        output_format=output_format,
         **kwargs,
     )
-
+    #
+    if return_info:
+        return output_db, info,
+    return output_db
+    #
     #]
 
 

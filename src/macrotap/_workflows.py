@@ -28,7 +28,7 @@ def run_sdmx_csv_workflow(
     merge_strategy: str = "error",
     target_db: _ap.Databox | None = None,
     discard_unwanted: bool = True,
-    return_info: bool = False,
+    output_format: _sr.OutputFormat = "series",
 ) -> _ap.Databox:
     r"""
     """
@@ -55,6 +55,7 @@ def run_sdmx_csv_workflow(
         response_db = _sr.parse_response(
             content,
             **build_extractors,
+            output_format=output_format,
         )
         #
         output_db.merge(
@@ -74,10 +75,7 @@ def run_sdmx_csv_workflow(
         strategy=merge_strategy,
     )
 
-    if return_info:
-        return target_db, info,
-
-    return target_db
+    return target_db, info,
 
     #]
 

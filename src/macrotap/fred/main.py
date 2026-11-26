@@ -24,7 +24,7 @@ _API_KEY = r"951f01181da86ccb9045ce8716f82f43"
 
 _BASE_URL = r"https://api.stlouisfed.org/fred/series"
 _OBSERVATIONS_URL = _BASE_URL + r"/observations"
-_PARAMETERS = r"?series_id={series_id}&api_key={api_key}&file_type=json"
+_PARAMETERS = r"?series_id={series_id}&api_key={api_key}&file_type=json{extra_params}"
 _MISSING_VALUE_STRINGS = (r".", )
 
 
@@ -32,6 +32,7 @@ def from_fred(
     request_strings: str | Iterable[str],
     target_db: _ap.Databox | None = None,
     return_info: bool = False,
+    extra_params: str = "",
 ) -> _ap.Databox:
     r"""
 ................................................................................
@@ -73,7 +74,7 @@ db = Databox.from_fred(
         target_db = _ap.Databox()
     info = []
     for i in request_strings:
-        target_db[i], current_info, = _get_series(i, )
+        target_db[i], current_info, = _get_series(i, extra_params, )
         if return_info:
             info.append(current_info)
     #
@@ -95,11 +96,14 @@ def _request_from_series_ids(series_ids: Iterable[str], ):
     #]
 
 
-def _get_series(series_id: str, ) -> tuple[_ap.Series, dict[str, Any]]:
+def _get_series(
+    series_id: str,
+    extra_params: str,
+) -> tuple[_ap.Series, dict[str, Any]]:
     """
     """
     #[
-    urls = _get_series_urls(series_id, )
+    urls = _get_series_urls(series_id, extra_params, )
     meta_response = _rq.get(urls["meta_url"], ).json()
     data_response = _rq.get(urls["data_url"], ).json()
     #
@@ -145,11 +149,18 @@ def _get_periods_and_values_from_data_response(data_response: dict, ):
     #]
 
 
-def _get_series_urls(series_id: str, ):
+def _get_series_urls(
+    series_id: str,
+    extra_params: str,
+) -> dict[str, str]:
     """
     """
     #[
-    parameters = _PARAMETERS.format(series_id=series_id, api_key=_API_KEY, )
+    parameters = _PARAMETERS.format(
+        series_id=series_id,
+        api_key=_API_KEY,
+        extra_params=extra_params,
+    )
     meta_url = _BASE_URL + parameters
     data_url = _OBSERVATIONS_URL + parameters
     return {"meta_url": meta_url, "data_url": data_url, }

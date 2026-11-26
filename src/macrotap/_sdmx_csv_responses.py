@@ -8,10 +8,10 @@ import io
 import csv
 
 # Typing imports
-from typing import Iterable, Callable
+from typing import Iterable, Callable, Literal
 
 # Third-party imports
-import datapie as _ap
+import datapie as _da
 
 # Application imports
 from . import _adaptations as _ad
@@ -25,6 +25,7 @@ _KEY_HEADER = "KEY"
 _FREQUENCY_HEADER = "FREQUENCY"
 _TIME_PERIOD_HEADER = "TIME_PERIOD"
 
+OutputFormat = Literal["series", "values", "observations"]
 
 def _build_key_extractor(
     header: Iterable[str],
@@ -93,7 +94,8 @@ def parse_response(
     build_frequency_extractor: Callable = _build_frequency_extractor,
     build_time_period_extractor: Callable = _build_time_period_extractor,
     build_value_extractor: Callable = _build_value_extractor,
-) -> _ap.Databox:
+    output_format: OutputFormat = "series",
+) -> _da.Databox:
 
     stream = io.StringIO(csv_response, )
     reader = csv.reader(stream, )
@@ -113,48 +115,82 @@ def parse_response(
         time_period_string = time_period_extractor(row, )
         value_string = value_extractor(row, )
         #
-        if not _is_valid_observation(time_period_string, frequency_letter, value_string, ):
+        if not _is_valid_period(time_period_string, frequency_letter, ):
             continue
         #
-        time_period = _ap.Period.from_sdmx_string(
+        time_period = _da.Period.from_sdmx_string(
             time_period_string,
             frequency=_ad.FREQUENCY_MAP[frequency_letter.casefold()],
         )
-        value = float(value_string, )
+        value = (
+            float(value_string, )
+            if not _is_missing_value(value_string, ) else None
+        )
         intermediate_db[db_key].append((time_period, value, ), )
 
-    output_db = _ap.Databox()
+    output_db = _da.Databox()
+
+    create_final_output = _FINAL_OUTPUT_MAP[output_format]
 
     for db_key, observations, in intermediate_db.items():
-        output_db[db_key] = _create_series_from_observations(observations, )
+        output_db[db_key] = create_final_output(observations, )
 
     return output_db
 
 
-def _is_valid_observation(
+def _is_valid_period(
     time_period_string: str,
     frequency_letter: str,
-    value_string: str,
 ) -> bool:
     if time_period_string == "":
         return False
     if frequency_letter.casefold() not in _ad.FREQUENCY_MAP:
         return False
-    if value_string in _MISSING_VALUE_STRINGS:
-        return False
     return True
 
 
+def _is_missing_value(
+    value_string: str,
+) -> bool:
+    return value_string in _MISSING_VALUE_STRINGS
+
+
 def _create_series_from_observations(
-    observations: Iterable[tuple],
-) -> _ap.Series:
+    observations: list[tuple[_da.Period, float | None]],
+) -> _da.Series:
     r"""
     """
     if not observations:
-        return _ap.Series.void()
-    time_periods, obs_values, = zip(*observations, )
-    return _ap.Series(
-        periods=time_periods,
-        values=obs_values,
+        return _da.Series.void()
+    periods, values, = zip(*observations, )
+    return _da.Series(
+        periods=periods,
+        values=values,
     )
+
+
+def _create_values_from_observations(
+    observations: list[tuple[_da.Period, float | None]],
+) -> list[float | None]:
+    r"""
+    """
+    if not observations:
+        return ()
+    _, values, = zip(*observations, )
+    return values
+
+
+def _create_observations_from_observations(
+    observations: list[tuple[_da.Period, float | None]],
+) -> list[tuple[_da.Period, float | None]]:
+    r"""
+    """
+    return observations
+
+
+_FINAL_OUTPUT_MAP = {
+    "series": _create_series_from_observations,
+    "values": _create_values_from_observations,
+    "observations": _create_observations_from_observations,
+}
 
