@@ -40,6 +40,10 @@ def build_request_urls_for_ecb(
     dataflow: str,
     request_strings: Iterable[str],
     group_requests_by: Callable | None = None,
+    #
+    resource: str = _DEFAULT_RESOURCE,
+    agency: str = _DEFAULT_AGENCY,
+    version: str = _DEFAULT_VERSION,
     extra_params: str = "",
 ) -> tuple[str, ...]:
     r"""
@@ -47,9 +51,9 @@ def build_request_urls_for_ecb(
     #[
     url_template = _URL_TEMPLATE.format(
         dataflow=dataflow,
-        resource=_DEFAULT_RESOURCE,
-        agency=_DEFAULT_AGENCY,
-        version=_DEFAULT_VERSION,
+        resource=resource,
+        agency=agency,
+        version=version,
         extra_params=extra_params,
     )
     return _dr.build_request_urls(
@@ -63,9 +67,15 @@ def build_request_urls_for_ecb(
 def from_ecb(
     dataflow: str,
     request_strings: Iterable[str],
-    extra_params: str = "",
+    #
     output_format: _sr.OutputFormat = "series",
     return_info: bool = False,
+    #
+    resource: str = _DEFAULT_RESOURCE,
+    agency: str = _DEFAULT_AGENCY,
+    version: str = _DEFAULT_VERSION,
+    extra_params: str = "",
+    #
     **kwargs,
 ) -> _da.Databox:
     r"""
@@ -74,9 +84,9 @@ def from_ecb(
     #
     url_template = _URL_TEMPLATE.format(
         dataflow=dataflow,
-        resource=_DEFAULT_RESOURCE,
-        agency=_DEFAULT_AGENCY,
-        version=_DEFAULT_VERSION,
+        resource=resource,
+        agency=agency,
+        version=version,
         extra_params=extra_params,
     )
     #

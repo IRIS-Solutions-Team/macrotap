@@ -41,13 +41,13 @@ def from_imf(
     resource: str,
     request_strings: Iterable[str],
     *,
+    output_format: _sr.OutputFormat = "series",
+    return_info: bool = False,
+    #
     context: str = _DEFAULT_CONTEXT,
     agency: str = _DEFAULT_AGENCY,
     version: str = _DEFAULT_VERSION,
     extra_params: str = "",
-    output_format: _sr.OutputFormat = "series",
-    prepend_resource: bool = False,
-    return_info: bool = False,
     #
     **kwargs,
 ) -> _da.Databox:
@@ -73,11 +73,6 @@ def from_imf(
         output_format=output_format,
         **kwargs,
     )
-    #
-    if prepend_resource:
-        output_db.rename(
-            target_names=lambda n: f"{resource}/{n}",
-        )
     #
     if return_info:
         return output_db, info,
